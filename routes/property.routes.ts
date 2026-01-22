@@ -6,6 +6,7 @@ import {
   updateProperty,
   deleteProperty,
   publishProperty,
+  getPropertiesByOwner,
 } from "../controllers/property.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 
@@ -30,5 +31,11 @@ router.patch(
   authorize("OWNER", "ADMIN"),
   publishProperty
 );
+
+// Get current owner's properties (no ownerId in path)
+router.get('/owner/my-properties', authenticate, authorize('OWNER', 'ADMIN'), getPropertiesByOwner)
+
+// Route 2: Get specific owner's properties (ownerId in path)
+router.get('/owner/:ownerId', authenticate, authorize('OWNER', 'ADMIN'), getPropertiesByOwner)
 
 export default router;

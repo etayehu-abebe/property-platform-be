@@ -1,12 +1,19 @@
 import { Request, Response } from "express";
 import prisma from "../utils/prisma";
 
+// Define the user type locally
+interface AuthUser {
+  userId: string
+  role: string
+  email: string
+  name?: string
+  organizationId?: string
+}
+
+
+// Extend the Request interface locally
 interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    email: string;
-    role: string;
-  };
+  user?: AuthUser
 }
 
 export const createProperty = async (req: AuthRequest, res: Response) => {
@@ -287,3 +294,104 @@ export const favoriteProperty = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: "Failed to favorite property" });
   }
 };
+
+/**
+ * Get properties by owner ID
+ * Owners can only see their own properties
+ * Admins can see any owner's properties
+ */
+export const getPropertiesByOwner = async (req: Request, res: Response) => {
+  try {
+    // TypeScript knows about req.user from your express.d.ts
+    const authReq = req as AuthRequest
+    const user = authReq.user // req.user
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated',
+      })
+    }
+
+    const { ownerId } = req.params
+    const ownerID = Array.isArray(ownerId) ? ownerId[0] : ownerId;
+
+    const userId = user.userId
+    const userRole = user.role
+    
+    // Use provided ownerId or default to current user's ID
+    const targetOwnerId = ownerID || userId
+    
+    if (!targetOwnerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Owner ID is required',
+      })
+    }
+
+    // Authorization check
+    if (userRole === 'OWNER' && targetOwnerId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only view your own properties',
+      })
+    }
+
+    // Check if owner exists
+    const owner = await prisma.user.findUnique({
+      where: {
+        id: targetOwnerId,
+        deletedAt: null,
+      },
+      select: { id: true, name: true, email: true }
+    })
+
+    if (!owner) {
+      return res.status(404).json({
+        success: false,
+        message: 'Owner not found',
+      })
+    }
+
+    // Fetch properties
+    const properties = await prisma.property.findMany({
+      where: {
+        ownerId: targetOwnerId,
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      }
+    })
+
+    res.json({
+      success: true,
+      data: properties,
+      owner,
+      count: properties.length,
+    })
+
+  } catch (error) {
+    console.error('Error fetching properties by owner:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching properties',
+    })
+  }
+}
+
+
+
