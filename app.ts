@@ -15,8 +15,8 @@ const PORT = process.env.PORT || 5000;
 const corsOptions = {
   origin:
     process.env.NODE_ENV === "production"
-      ? ["https://property-platform-fe.vercel.app"] // Change for production
-      : ["http://localhost:3000", "http://localhost:3001"], // Development
+      ? "https://property-platform-fe.vercel.app"
+      : true, // allow all origins in dev
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
