@@ -34,8 +34,8 @@ This project uses the following technologies:
   Enables secure cross-origin requests between the backend (Render) and frontend (Vercel).
 
 ### Development Tools
-- ## ts-node ## – Run TypeScript directly in development  
-- ## nodemon ## – Automatically restarts the server on file changes  
+- ## ts-node – Run TypeScript directly in development  
+- ## nodemon – Automatically restarts the server on file changes  
 
 ---
 
